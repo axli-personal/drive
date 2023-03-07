@@ -1,0 +1,160 @@
+services:
+  mysql:
+    image: mysql
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234qwer
+      MYSQL_DATABASE: drive
+    ports:
+      - 3306:3306 # Expose for debug.
+    healthcheck:
+      test: "mysql -p$$MYSQL_ROOT_PASSWORD -e 'SHOW TABLES' $$MYSQL_DATABASE"
+      interval: 5s
+      timeout: 1s
+      retries: 3
+    networks:
+      drive-net:
+  redis:
+    image: redis
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+    ports:
+      - 6379:6379 # Expose for debug.
+    networks:
+      drive-net:
+  user:
+    image: user
+    build:
+      context: internal/user
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+    environment:
+      MYSQL_CONNECTION_STRING: root:1234qwer@tcp(mysql)/drive?charset=utf8mb4&parseTime=True&loc=Local
+      REDIS_CONNECTION_STRING: redis://redis:6379/0
+      LOG_LEVEL: DEBUG
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - 8080:8080
+    networks:
+      drive-net:
+  drive:
+    image: drive
+    build:
+      context: internal/drive
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+    environment:
+      MYSQL_CONNECTION_STRING: root:1234qwer@tcp(mysql)/drive?charset=utf8mb4&parseTime=True&loc=Local
+      REDIS_CONNECTION_STRING: redis://redis:6379/0
+      USER_SERVICE_ADDRESS: user:8081
+      LOG_LEVEL: DEBUG
+      STORAGE_ENDPOINTS: http://localhost:8090,http://localhost:8091,http://localhost:8092
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - 8081:8080
+    networks:
+      drive-net:
+  storage-service-1:
+    image: storage
+    build:
+      context: internal/storage
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+    environment:
+      ENDPOINT: http://localhost:8090
+      DATA_DIRECTORY: /data
+      REQUEST_PER_SECOND: 100
+      DRIVE_SERVICE_ADDRESS: drive:8081
+      REDIS_CONNECTION_STRING: redis://redis:6379/0
+      LOG_LEVEL: DEBUG
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - 8090:8080
+    networks:
+      drive-net:
+  storage-service-2:
+    image: storage
+    build:
+      context: internal/storage
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+    environment:
+      ENDPOINT: http://localhost:8091
+      DATA_DIRECTORY: /data
+      REQUEST_PER_SECOND: 100
+      DRIVE_SERVICE_ADDRESS: drive:8081
+      REDIS_CONNECTION_STRING: redis://redis:6379/0
+      LOG_LEVEL: DEBUG
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - 8091:8080
+    networks:
+      drive-net:
+  storage-service-3:
+    image: storage
+    build:
+      context: internal/storage
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+    environment:
+      ENDPOINT: http://localhost:8092
+      DATA_DIRECTORY: /data
+      REQUEST_PER_SECOND: 100
+      DRIVE_SERVICE_ADDRESS: drive:8081
+      REDIS_CONNECTION_STRING: redis://redis:6379/0
+      LOG_LEVEL: DEBUG
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - 8092:8080
+    networks:
+      drive-net:
+
+networks:
+  drive-net:
