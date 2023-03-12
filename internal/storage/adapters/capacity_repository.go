@@ -2,10 +2,15 @@ package adapters
 
 import (
 	"context"
+	"errors"
 	"github.com/axli-personal/drive/internal/storage/repository"
 	"github.com/redis/go-redis/v9"
 	"syscall"
 	"time"
+)
+
+var (
+	ErrNoRequestCapacity = errors.New("no request capacity")
 )
 
 const (
@@ -59,8 +64,16 @@ func NewRedisCapacityRepository(connectionString string, endpoint string, direct
 	return repo, nil
 }
 
-func (repo RedisCapacityRepository) DecreaseRequestCapacity(ctx context.Context, amount int) error {
-	return repo.client.DecrBy(ctx, repo.endpoint+":"+KeyRequestCapacity, int64(amount)).Err()
+func (repo RedisCapacityRepository) DecreaseRequestCapacity(ctx context.Context) error {
+	capacity, err := repo.client.Get(ctx, repo.endpoint+":"+KeyRequestCapacity).Int()
+	if err != nil {
+		return err
+	}
+	if capacity <= 0 {
+		return ErrNoRequestCapacity
+	}
+
+	return repo.client.Decr(ctx, repo.endpoint+":"+KeyRequestCapacity).Err()
 }
 
 func (repo RedisCapacityRepository) updateDiskCapacity(ctx context.Context) error {

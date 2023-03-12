@@ -36,7 +36,10 @@ type downloadObjectHandler struct {
 }
 
 func (handler downloadObjectHandler) Handle(ctx context.Context, args DownloadObjectArgs) (DownloadObjectResult, error) {
-	handler.capacityRepo.DecreaseRequestCapacity(ctx, 1)
+	err := handler.capacityRepo.DecreaseRequestCapacity(ctx)
+	if err != nil {
+		return DownloadObjectResult{}, err
+	}
 
 	response, err := handler.driveService.CanDownload(
 		types.CanDownloadRequest{

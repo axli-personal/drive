@@ -38,7 +38,10 @@ type uploadObjectHandler struct {
 }
 
 func (handler uploadObjectHandler) Handle(ctx context.Context, args UploadObjectArgs) (UploadObjectResult, error) {
-	handler.capacityRepo.DecreaseRequestCapacity(ctx, 1)
+	err := handler.capacityRepo.DecreaseRequestCapacity(ctx)
+	if err != nil {
+		return UploadObjectResult{}, err
+	}
 
 	response, err := handler.driveService.CanUpload(
 		types.CanUploadRequest{

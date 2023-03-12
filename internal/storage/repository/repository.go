@@ -13,7 +13,7 @@ type (
 	}
 
 	CapacityRepository interface {
-		DecreaseRequestCapacity(ctx context.Context, amount int) error
+		DecreaseRequestCapacity(ctx context.Context) error
 	}
 
 	EventRepository interface {
