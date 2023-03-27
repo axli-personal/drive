@@ -1,3 +1,4 @@
-.idea
-todo
+.idea/
 build/
+node_modules/
+dist/

@@ -1,0 +1,10 @@
+{
+  "name": "drive-test",
+  "license": "MIT",
+  "scripts": {
+    "test": "k6 run src/performance.js"
+  },
+  "devDependencies": {
+    "@types/k6": "^0.43.2"
+  }
+}

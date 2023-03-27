@@ -32,7 +32,7 @@ services:
   user:
     image: user
     build:
-      context: internal/user
+      context: backend/user
       dockerfile: Dockerfile
     restart: always
     deploy:
@@ -55,7 +55,7 @@ services:
   drive:
     image: drive
     build:
-      context: internal/drive
+      context: backend/drive
       dockerfile: Dockerfile
     restart: always
     deploy:
@@ -67,7 +67,6 @@ services:
       REDIS_CONNECTION_STRING: redis://redis:6379/0
       USER_SERVICE_ADDRESS: user:8081
       LOG_LEVEL: DEBUG
-      STORAGE_ENDPOINTS: http://localhost:8090,http://localhost:8091,http://localhost:8092
     depends_on:
       mysql:
         condition: service_healthy
@@ -77,10 +76,10 @@ services:
       - 8081:8080
     networks:
       drive-net:
-  storage-service-1:
+  storage:
     image: storage
     build:
-      context: internal/storage
+      context: backend/storage
       dockerfile: Dockerfile
     restart: always
     deploy:
@@ -100,59 +99,21 @@ services:
       redis:
         condition: service_started
     ports:
-      - 8090:8080
+      - 8082:8080
     networks:
       drive-net:
-  storage-service-2:
-    image: storage
+  web:
+    image: web
     build:
-      context: internal/storage
+      context: frontend
       dockerfile: Dockerfile
     restart: always
     deploy:
       resources:
         limits:
           cpus: "0.50"
-    environment:
-      ENDPOINT: http://localhost:8091
-      DATA_DIRECTORY: /data
-      REQUEST_PER_SECOND: 100
-      DRIVE_SERVICE_ADDRESS: drive:8081
-      REDIS_CONNECTION_STRING: redis://redis:6379/0
-      LOG_LEVEL: DEBUG
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
     ports:
-      - 8091:8080
-    networks:
-      drive-net:
-  storage-service-3:
-    image: storage
-    build:
-      context: internal/storage
-      dockerfile: Dockerfile
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50"
-    environment:
-      ENDPOINT: http://localhost:8092
-      DATA_DIRECTORY: /data
-      REQUEST_PER_SECOND: 100
-      DRIVE_SERVICE_ADDRESS: drive:8081
-      REDIS_CONNECTION_STRING: redis://redis:6379/0
-      LOG_LEVEL: DEBUG
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    ports:
-      - 8092:8080
+      - 80:80
     networks:
       drive-net:
 
