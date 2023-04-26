@@ -23,7 +23,7 @@ import { useRouter } from "vue-router";
 import { site }      from "/src/backend";
 
 import { ElMessage, ElInput, ElDivider } from "element-plus";
-import List from "/src/components/article/List.vue";
+import List from "/src/components/drive/List.vue";
 
 export default {
   components: { List, ElInput, ElDivider },

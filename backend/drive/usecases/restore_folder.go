@@ -11,24 +11,24 @@ import (
 )
 
 type (
-	RemoveFolderArgs struct {
+	RestoreFolderArgs struct {
 		SessionId string
 		FolderId  uuid.UUID
 	}
 
-	RemoveFolderResult struct {
+	RestoreFolderResult struct {
 	}
 )
 
-type removeFolderHandler struct {
+type restoreFolderHandler struct {
 	repo        repository.Repository
 	userService remote.UserService
 }
 
-func (h removeFolderHandler) Handle(ctx context.Context, args RemoveFolderArgs) (RemoveFolderResult, error) {
+func (h restoreFolderHandler) Handle(ctx context.Context, args RestoreFolderArgs) (RestoreFolderResult, error) {
 	user, err := h.userService.GetUser(ctx, args.SessionId)
 	if err != nil {
-		return RemoveFolderResult{}, err
+		return RestoreFolderResult{}, err
 	}
 
 	err = h.repo.Transaction(func(repo repository.Repository) error {
@@ -47,11 +47,11 @@ func (h removeFolderHandler) Handle(ctx context.Context, args RemoveFolderArgs) 
 			return err
 		}
 
-		err = folder.ManuallyTrash()
+		err = folder.ManuallyRestore()
 		if err != nil {
 			return err
 		}
-		err = repo.GetFolderRepo().UpdateFolder(ctx, folder, repository.UpdateFolderOptions{UpdateChildrenState: true})
+		err = repo.GetFolderRepo().UpdateFolder(ctx, folder, repository.UpdateFolderOptions{})
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (h removeFolderHandler) Handle(ctx context.Context, args RemoveFolderArgs) 
 				return err
 			}
 			for i := 0; i < len(subFiles); i++ {
-				err = subFiles[i].RecursivelyTrash()
+				err = subFiles[i].RecursivelyRestore()
 				if err != nil {
 					return err
 				}
@@ -93,7 +93,7 @@ func (h removeFolderHandler) Handle(ctx context.Context, args RemoveFolderArgs) 
 				return err
 			}
 			for i := 0; i < len(subFolders); i++ {
-				err = subFolders[i].RecursivelyTrash()
+				err = subFolders[i].RecursivelyRestore()
 				if err != nil {
 					return err
 				}
@@ -109,21 +109,21 @@ func (h removeFolderHandler) Handle(ctx context.Context, args RemoveFolderArgs) 
 		return nil
 	})
 	if err != nil {
-		return RemoveFolderResult{}, err
+		return RestoreFolderResult{}, err
 	}
 
-	return RemoveFolderResult{}, nil
+	return RestoreFolderResult{}, nil
 }
 
-type RemoveFolderHandler decorator.Handler[RemoveFolderArgs, RemoveFolderResult]
+type RestoreFolderHandler decorator.Handler[RestoreFolderArgs, RestoreFolderResult]
 
-func NewRemoveFolderHandler(
+func NewRestoreFolderHandler(
 	repo repository.Repository,
 	userService remote.UserService,
 	logger *logrus.Entry,
-) RemoveFolderHandler {
-	return decorator.WithLogging[RemoveFolderArgs, RemoveFolderResult](
-		removeFolderHandler{
+) RestoreFolderHandler {
+	return decorator.WithLogging[RestoreFolderArgs, RestoreFolderResult](
+		restoreFolderHandler{
 			repo:        repo,
 			userService: userService,
 		},

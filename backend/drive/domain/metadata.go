@@ -13,6 +13,7 @@ var (
 	ErrCannotDelete       = errors.New("cannot delete")
 	ErrCannotShare        = errors.New("cannot share")
 	ErrCannotTrash        = errors.New("cannot trash")
+	ErrCannotRestore      = errors.New("cannot restore")
 	ErrCannotChangeParent = errors.New("cannot change parent")
 )
 
@@ -113,13 +114,45 @@ func (metadata *Metadata) ChangeParent(parent Parent) error {
 	return nil
 }
 
-func (metadata *Metadata) Trash() error {
+func (metadata *Metadata) ManuallyTrash() error {
+	if metadata.state != StatePrivate && metadata.state != StateShared {
+		return ErrCannotTrash
+	}
+
+	metadata.state = StateTrashedRoot
+	metadata.lastChange = time.Now()
+
+	return nil
+}
+
+func (metadata *Metadata) RecursivelyTrash() error {
 	if metadata.state != StatePrivate && metadata.state != StateShared {
 		return ErrCannotTrash
 	}
 
 	metadata.state = StateTrashed
-	metadata.parent = CreateRecycleBinParent()
+	metadata.lastChange = time.Now()
+
+	return nil
+}
+
+func (metadata *Metadata) ManuallyRestore() error {
+	if metadata.state != StateTrashedRoot {
+		return ErrCannotRestore
+	}
+
+	metadata.state = StatePrivate
+	metadata.lastChange = time.Now()
+
+	return nil
+}
+
+func (metadata *Metadata) RecursivelyRestore() error {
+	if metadata.state != StateTrashed {
+		return ErrCannotRestore
+	}
+
+	metadata.state = StatePrivate
 	metadata.lastChange = time.Now()
 
 	return nil

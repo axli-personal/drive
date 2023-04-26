@@ -9,29 +9,29 @@ import (
 	"github.com/google/uuid"
 )
 
-func (server HTTPServer) RemoveFile(ctx *fiber.Ctx) (err error) {
+func (server HTTPServer) RemoveFolder(ctx *fiber.Ctx) (err error) {
 	sessionId := ctx.Cookies(auth.SessionIdCookieKey)
 	if sessionId == "" {
 		return ctx.SendStatus(fiber.StatusForbidden)
 	}
 
-	request := types.RemoveFileRequest{}
+	request := types.RemoveFolderRequest{}
 
 	err = ctx.ParamsParser(&request)
 	if err != nil {
 		return ctx.SendStatus(fiber.StatusBadRequest)
 	}
 
-	fileId, err := uuid.Parse(request.FileId)
+	folderId, err := uuid.Parse(request.FolderId)
 	if err != nil {
 		return ctx.SendStatus(fiber.StatusBadRequest)
 	}
 
-	_, err = server.svc.RemoveFile.Handle(
+	_, err = server.svc.RemoveFolder.Handle(
 		context.Background(),
-		usecases.RemoveFileArgs{
+		usecases.RemoveFolderArgs{
 			SessionId: sessionId,
-			FileId:    fileId,
+			FolderId:  folderId,
 		},
 	)
 

@@ -89,6 +89,22 @@ type ShareFolderRequest struct {
 	FolderId string `params:"folderId"`
 }
 
+type RemoveFileRequest struct {
+	FileId string `params:"fileId"`
+}
+
+type RemoveFolderRequest struct {
+	FolderId string `params:"folderId"`
+}
+
+type RestoreFileRequest struct {
+	FileId string `params:"fileId"`
+}
+
+type RestoreFolderRequest struct {
+	FolderId string `params:"folderId"`
+}
+
 type Children struct {
 	Folders []FolderLink `json:"folders"`
 	Files   []FileLink   `json:"files"`
@@ -111,4 +127,8 @@ type GetDriveResponse struct {
 	PlanName  string   `json:"planName"`
 	UsedBytes int      `json:"usedBytes"`
 	MaxBytes  int      `json:"maxBytes"`
+}
+
+type GetRecycleBinResponse struct {
+	Children Children `json:"children"`
 }

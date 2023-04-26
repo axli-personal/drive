@@ -43,6 +43,8 @@ func main() {
 		app.Post("/folders/create", httpServer.CreateFolder)
 
 		app.Get("/drive", httpServer.GetDrive)
+		app.Get("/recycle-bin", httpServer.GetRecycleBin)
+
 		app.Get("/files/:fileId", httpServer.GetFile)
 		app.Get("/folders/:folderId", httpServer.GetFolder)
 		app.Get("/path/:parent", httpServer.GetPath)
@@ -50,7 +52,11 @@ func main() {
 		app.Post("/files/share/:fileId", httpServer.ShareFile)
 		app.Post("/folders/share/:folderId", httpServer.ShareFolder)
 
-		app.Post("/files/remove", httpServer.RemoveFile)
+		app.Post("/files/remove/:fileId", httpServer.RemoveFile)
+		app.Post("/folders/remove/:folderId", httpServer.RemoveFolder)
+
+		app.Post("/files/restore/:fileId", httpServer.RestoreFile)
+		app.Post("/folders/restore/:folderId", httpServer.RestoreFolder)
 
 		err := app.Listen(":8080")
 		if err != nil {

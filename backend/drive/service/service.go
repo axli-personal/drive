@@ -22,7 +22,9 @@ type Service struct {
 	FinishUpload  usecases.FinishUploadHandler
 	StartDownload usecases.StartDownloadHandler
 
-	GetDrive  usecases.GetDriveHandler
+	GetDrive      usecases.GetDriveHandler
+	GetRecycleBin usecases.GetRecycleBinHandler
+
 	GetFile   usecases.GetFileHandler
 	GetFolder usecases.GetFolderHandler
 	GetPath   usecases.GetPathHandler
@@ -36,10 +38,18 @@ type Service struct {
 	RemoveFile   usecases.RemoveFileHandler
 	RemoveFolder usecases.RemoveFolderHandler
 
+	RestoreFile   usecases.RestoreFileHandler
+	RestoreFolder usecases.RestoreFolderHandler
+
 	DeleteFile usecases.DeleteFileHandler
 }
 
 func NewService(config Config) (Service, error) {
+	repo, err := adapters.NewMysqlRepository(config.MysqlConnectionString)
+	if err != nil {
+		return Service{}, err
+	}
+
 	driveRepo, err := adapters.NewMysqlDriveRepository(config.MysqlConnectionString)
 	if err != nil {
 		return Service{}, err
@@ -74,11 +84,13 @@ func NewService(config Config) (Service, error) {
 		CreateDrive:  usecases.NewCreateDriveHandler(userService, driveRepo, logger),
 		CreateFolder: usecases.NewCreateFolderHandler(userService, driveRepo, folderRepo, logger),
 
-		StartUpload:   usecases.NewStartUploadHandler(userService, driveRepo, fileRepo, logger),
+		StartUpload:   usecases.NewStartUploadHandler(repo, userService, logger),
 		FinishUpload:  usecases.NewFileUploadedHandler(fileRepo, logger),
 		StartDownload: usecases.NewStartDownloadHandler(userService, driveRepo, fileRepo, logger),
 
-		GetDrive:  usecases.NewGetDriveHandler(userService, driveRepo, folderRepo, fileRepo, logger),
+		GetDrive:      usecases.NewGetDriveHandler(userService, driveRepo, folderRepo, fileRepo, logger),
+		GetRecycleBin: usecases.NewGetRecycleBinHandler(repo, userService, logger),
+
 		GetFile:   usecases.NewGetFileHandler(userService, driveRepo, fileRepo, logger),
 		GetFolder: usecases.NewGetFolderHandler(userService, driveRepo, folderRepo, fileRepo, logger),
 		GetPath:   usecases.NewGetPathHandler(userService, driveRepo, folderRepo, logger),
@@ -89,8 +101,11 @@ func NewService(config Config) (Service, error) {
 		MoveFile:   usecases.NewMoveFileHandler(userService, driveRepo, folderRepo, fileRepo, logger),
 		MoveFolder: usecases.NewMoveFolderHandler(userService, driveRepo, folderRepo, logger),
 
-		RemoveFile:   usecases.NewRemoveFileHandler(userService, driveRepo, fileRepo, logger),
-		RemoveFolder: usecases.NewRemoveFolderHandler(userService, driveRepo, folderRepo, logger),
+		RemoveFile:   usecases.NewRemoveFileHandler(repo, userService, logger),
+		RemoveFolder: usecases.NewRemoveFolderHandler(repo, userService, logger),
+
+		RestoreFile:   usecases.NewRestoreFileHandler(repo, userService, logger),
+		RestoreFolder: usecases.NewRestoreFolderHandler(repo, userService, logger),
 
 		DeleteFile: usecases.NewDeleteFileHandler(userService, driveRepo, fileRepo, eventRepo, logger),
 	}

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <el-form class="form-default" label-width="120px" label-position="left">
+    <el-form label-width="120px" label-position="left">
       <h1>登陆</h1>
       <el-form-item label="账号">
         <el-input v-model="account" placeholder="请输入账号"/>

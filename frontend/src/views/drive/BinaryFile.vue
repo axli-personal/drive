@@ -1,10 +1,26 @@
 <template>
   <div id="file">
     <div id="header">
-      <span>{{ name }}, {{ size }}字节, 已下载{{ downloadCounts }}次.</span>
-      <el-icon :size="20" @click="download">
+      <el-icon>
+        <HomeFilled/>
+      </el-icon>
+      <el-breadcrumb id="path-nav">
+        <el-breadcrumb-item to="/drive/my-drive">云端硬盘</el-breadcrumb-item>
+        <el-breadcrumb-item v-for="folder in path" :to="`/drive/folders/${folder.Id}`">
+          {{ folder.Name }}
+        </el-breadcrumb-item>
+        <el-breadcrumb-item>{{ name }}</el-breadcrumb-item>
+      </el-breadcrumb>
+      <el-icon @click="download">
         <Download/>
       </el-icon>
+    </div>
+    <div id="description">
+      <el-descriptions border>
+        <el-descriptions-item label="文件名">{{ name }}</el-descriptions-item>
+        <el-descriptions-item label="文件大小">{{ size }}字节</el-descriptions-item>
+        <el-descriptions-item label="下载次数">{{ downloadCounts }}</el-descriptions-item>
+      </el-descriptions>
     </div>
     <div id="view">
       <span>该文件类型不支持预览，请点击右上角下载图标进行下载。</span>
@@ -16,29 +32,38 @@
 import { ref } from "vue";
 import { useRoute } from "vue-router";
 
-import { ElIcon, ElMessage } from "element-plus";
-import { Download } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { HomeFilled, Download } from "@element-plus/icons-vue";
 
 import { driveService, storageService } from "/src/backend";
 
 export default {
-  components: { ElIcon, Download },
+  components: { HomeFilled, Download },
   setup() {
     const route = useRoute();
 
     const name = ref("");
+    const parent = ref("");
     const size = ref(0);
     const downloadCounts = ref(0);
+    const path = ref([]);
 
-    driveService.get(
-      `/files/${route.params["fileId"]}`
-    ).then(({ data }) => {
-      name.value = data.name;
-      size.value = data.bytes;
-      downloadCounts.value = data.downloadCounts;
-    }).catch(() => {
-      ElMessage({ type: "error", message: "获取文件失败" });
-    });
+    const initFile = async (fileId) => {
+      try {
+        const { data: fileData } = await driveService.get(`/files/${fileId}`);
+        name.value = fileData.name;
+        parent.value = fileData.parent;
+        size.value = fileData.bytes;
+        downloadCounts.value = fileData.downloadCounts;
+
+        const { data: pathData } = await driveService.get(`/path/${parent.value}`);
+        path.value = pathData.Folders ? pathData.Folders.reverse() : [];
+      } catch (e) {
+        ElMessage({ type: "error", message: "获取文件失败" });
+      }
+    }
+
+    initFile(route.params.fileId);
 
     const download = () => {
       storageService.get(
@@ -63,13 +88,14 @@ export default {
       });
     };
 
-    return { name, size, downloadCounts, download };
+    return { name, size, downloadCounts, path, download };
   }
 }
 </script>
 
 <style scoped>
 #file {
+  font-size: 18px;
   border-radius: 5px;
   background-color: #ffffff;
   box-shadow: 0 0 0 1px #eee;
@@ -77,17 +103,17 @@ export default {
 
 #header {
   display: flex;
-  flex-direction: row;
-  padding: 10px;
+  align-items: center;
+  padding: 20px;
   border-bottom: 1px solid #e5e9ef;
-  font-size: 18px;
 }
 
-#header span {
+#header #path-nav {
   flex: 1;
+  padding: 0 15px;
 }
 
 #view {
-  padding: 10px;
+  padding: 20px;
 }
 </style>

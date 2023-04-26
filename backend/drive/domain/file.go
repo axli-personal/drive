@@ -76,8 +76,16 @@ func (file *File) Size() int {
 	return file.size
 }
 
+func (file *File) SetSize(size int) {
+	file.size = size
+}
+
 func (file *File) Hash() string {
 	return file.hash
+}
+
+func (file *File) SetHash(hash string) {
+	file.hash = hash
 }
 
 func (file *File) DownloadCounts() int {

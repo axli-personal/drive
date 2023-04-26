@@ -1,26 +1,46 @@
 <template>
   <div id="folder">
     <div id="header">
-      <span>{{ name }}</span>
-      <el-upload :http-request="upload" :show-file-list="false">
-        <el-icon :size="20">
-          <Upload/>
-        </el-icon>
-      </el-upload>
+      <el-icon>
+        <HomeFilled/>
+      </el-icon>
+      <el-breadcrumb id="path-nav">
+        <el-breadcrumb-item to="/drive/my-drive">云端硬盘</el-breadcrumb-item>
+        <el-breadcrumb-item v-for="folder in path" :to="`/drive/folders/${folder.Id}`">
+          {{ folder.Name }}
+        </el-breadcrumb-item>
+        <el-breadcrumb-item>{{ name }}</el-breadcrumb-item>
+      </el-breadcrumb>
+      <el-icon @click="displayDrawer">
+        <CirclePlus/>
+      </el-icon>
+      <CreateDrawer v-model="isDisplayDrawer" :parent="id"></CreateDrawer>
     </div>
 
     <ul id="menu">
-      <li v-if="parent" @click="backToParent">
-        <img src="/icon/folder.png" alt="folder">
-        ..
+      <li v-if="parent">
+        <el-icon>
+          <Folder/>
+        </el-icon>
+        <span @click="backToParent">..</span>
       </li>
-      <li v-for="folder in folders" @click="changeFolder(folder.id)">
-        <img src="/icon/folder.png" alt="folder">
-        {{ folder.name }}
+      <li v-for="folder in folders">
+        <el-icon>
+          <Folder/>
+        </el-icon>
+        <span @click="viewFolder(folder.id)">{{ folder.name }}</span>
+        <el-icon @click="viewFolder(folder.id)">
+          <Delete/>
+        </el-icon>
       </li>
-      <li v-for="file in files" @click="viewFile(file.id, file.name)">
-        <img src="/icon/file.png" alt="file">
-        {{ file.name }}
+      <li v-for="file in files">
+        <el-icon>
+          <Document/>
+        </el-icon>
+        <span @click="viewFile(file.id, file.name)">{{ file.name }}</span>
+        <el-icon @click="removeFile(file.id)">
+          <Delete/>
+        </el-icon>
       </li>
     </ul>
   </div>
@@ -28,104 +48,111 @@
 
 <script>
 import { ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute, useRouter, onBeforeRouteUpdate } from "vue-router";
 
-import { ElUpload, ElIcon, ElMessage } from "element-plus";
-import { Upload } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { HomeFilled, CirclePlus, Folder, Document, Delete } from "@element-plus/icons-vue";
 
-import { driveService, storageService } from "/src/backend";
+import CreateDrawer from "/src/components/drive/CreateDrawer.vue";
+
+import { driveService } from "/src/backend";
+import { getFileViewType } from "./util";
 
 export default {
-  components: { ElUpload, ElIcon, Upload },
+  components: { CreateDrawer, HomeFilled, CirclePlus, Folder, Document, Delete },
   setup() {
     const route = useRoute();
     const router = useRouter();
 
+    const id = ref("");
     const name = ref("");
     const parent = ref("");
     const folders = ref([]);
     const files = ref([]);
+    const path = ref([]);
 
-    const changeFolder = (folderId) => {
-      router.push(`/drive/folders/${folderId}`);
-      driveService.get(
-        `/folders/${folderId}`
-      ).then(({ data }) => {
-        name.value = data.name;
-        parent.value = data.parent;
-        folders.value = data.children.folders;
-        files.value = data.children.files;
-      }).catch(() => {
+    const initFolder = async (folderId) => {
+      try {
+        id.value = folderId;
+
+        const { data: folderData } = await driveService.get(`/folders/${folderId}`);
+        name.value = folderData.name;
+        parent.value = folderData.parent;
+        folders.value = folderData.children.folders;
+        files.value = folderData.children.files;
+
+        const { data: pathData } = await driveService.get(`/path/${parent.value}`);
+        path.value = pathData.Folders ? pathData.Folders.reverse() : [];
+      } catch (e) {
         ElMessage({ type: "error", message: "获取目录失败" });
-      });
+      }
     }
+
+    initFolder(route.params.folderId);
+
+    onBeforeRouteUpdate((to) => {
+      initFolder(to.params.folderId);
+    })
 
     const backToParent = () => {
       if (parent.value === "Drive") {
         router.push("/drive/my-drive");
       } else {
-        changeFolder(parent.value);
+        router.push(`/drive/folders/${parent.value}`);
       }
+    }
+
+    const viewFolder = (folderId) => {
+      router.push(`/drive/folders/${folderId}`);
     }
 
     const viewFile = (fileId, fileName) => {
-      let viewType = "binary";
-      const dotPosition = fileName.lastIndexOf(".");
-      if (dotPosition != -1) {
-        switch (fileName.substring(dotPosition + 1)) {
-          case "txt":
-            viewType = "text"
-            break;
-          case "md":
-            viewType = "markdown"
-            break;
-        }
-      }
-      router.push(`/drive/files/${viewType}/${fileId}`);
+      router.push(`/drive/files/${getFileViewType(fileName)}/${fileId}`);
     }
 
-    const upload = (options) => {
-      const file = options.file;
-      const form = new FormData();
-      form.append('file', file);
-      form.append('parent', route.params["folderId"]);
-      storageService.post(
-        "/upload",
-        form,
-        {
-          headers: { "content-type": "multipart/form-data" },
-        }
-      ).then(() => {
-        window.location.reload();
-      }).catch(() => {
-        ElMessage({ type: "error", message: "上传失败" });
-      })
+    const isDisplayDrawer = ref(false);
+
+    const displayDrawer = () => {
+      isDisplayDrawer.value = true;
     }
 
-    changeFolder(route.params["folderId"]);
-
-    return { name, parent, files, folders, backToParent, changeFolder, viewFile, upload };
+    return {
+      id,
+      name,
+      parent,
+      files,
+      folders,
+      path,
+      backToParent,
+      viewFolder,
+      viewFile,
+      isDisplayDrawer,
+      displayDrawer
+    };
   },
 };
 </script>
 
 <style scoped>
 #folder {
+  font-size: 18px;
   border-radius: 5px;
   background-color: #ffffff;
   box-shadow: 0 0 0 1px #eee;
 }
 
-#header {
+#header,
+#menu li {
   display: flex;
-  flex-direction: row;
-  padding: 10px;
+  align-items: center;
+  padding: 20px;
   border-bottom: 1px solid #e5e9ef;
-  font-size: 18px;
 }
 
-#header span {
+#header #path-nav,
+#menu li span {
   flex: 1;
+  padding: 0 15px;
 }
 
 #menu {
@@ -133,22 +160,10 @@ export default {
   flex-direction: column;
   margin: 0;
   padding: 0;
-  font-size: 18px;
 }
 
 #menu li {
-  padding: 18px;
-  border-bottom: 1px solid #e5e9ef;
   list-style: none;
   cursor: pointer;
-}
-
-#menu img {
-  height: 16px;
-}
-
-#menu a {
-  color: inherit;
-  text-decoration: none;
 }
 </style>

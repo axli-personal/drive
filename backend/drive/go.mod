@@ -1,6 +1,6 @@
 module github.com/axli-personal/drive/backend/drive
 
-go 1.20
+go 1.19
 
 require (
 	github.com/axli-personal/drive/backend/common v0.0.0
@@ -11,7 +11,7 @@ require (
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/sirupsen/logrus v1.9.0
 	gorm.io/driver/mysql v1.4.7
-	gorm.io/gorm v1.24.5
+	gorm.io/gorm v1.25.0
 )
 
 require (

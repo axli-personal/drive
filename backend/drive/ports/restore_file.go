@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func (server HTTPServer) RemoveFile(ctx *fiber.Ctx) (err error) {
+func (server HTTPServer) RestoreFile(ctx *fiber.Ctx) (err error) {
 	sessionId := ctx.Cookies(auth.SessionIdCookieKey)
 	if sessionId == "" {
 		return ctx.SendStatus(fiber.StatusForbidden)
 	}
 
-	request := types.RemoveFileRequest{}
+	request := types.RestoreFileRequest{}
 
 	err = ctx.ParamsParser(&request)
 	if err != nil {
@@ -27,9 +27,9 @@ func (server HTTPServer) RemoveFile(ctx *fiber.Ctx) (err error) {
 		return ctx.SendStatus(fiber.StatusBadRequest)
 	}
 
-	_, err = server.svc.RemoveFile.Handle(
+	_, err = server.svc.RestoreFile.Handle(
 		context.Background(),
-		usecases.RemoveFileArgs{
+		usecases.RestoreFileArgs{
 			SessionId: sessionId,
 			FileId:    fileId,
 		},

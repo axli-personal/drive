@@ -2,7 +2,6 @@ package adapters
 
 import (
 	"context"
-	"errors"
 	"github.com/axli-personal/drive/backend/drive/domain"
 	"github.com/axli-personal/drive/backend/drive/repository"
 	"github.com/google/uuid"
@@ -62,9 +61,24 @@ func getFolder(ctx context.Context, tx *gorm.DB, id uuid.UUID) (*domain.Folder, 
 }
 
 func findFolder(ctx context.Context, tx *gorm.DB, options repository.FindFolderOptions) ([]*domain.Folder, error) {
-	var folderModels []FolderModel
+	if options.DriveId != uuid.Nil {
+		tx = tx.Where("drive_id = ?", options.DriveId.String())
+	}
 
-	err := tx.Where("parent = ?", options.Parent.String()).Find(&folderModels).Error
+	if !options.Parent.IsZero() {
+		tx = tx.Where("parent = ?", options.Parent.String())
+	}
+
+	if len(options.States) > 0 {
+		var statesCond []string
+		for _, state := range options.States {
+			statesCond = append(statesCond, state.Value())
+		}
+		tx = tx.Where("state IN ?", statesCond)
+	}
+
+	var folderModels []FolderModel
+	err := tx.Find(&folderModels).Error
 	if err != nil {
 		return nil, err
 	}
@@ -89,36 +103,36 @@ func updateFolder(ctx context.Context, tx *gorm.DB, folder *domain.Folder, optio
 		return err
 	}
 
-	if options.UpdateChildrenState {
-		parent, err := domain.CreateFolderParent(folder.Id())
-		if err != nil {
-			return err
-		}
-
-		subFiles, err := findFile(ctx, tx, repository.FindFileOptions{Parent: parent})
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-		for i := 0; i < len(subFiles); i++ {
-			subFiles[i].SetState(folder.State())
-			err = updateFile(ctx, tx, subFiles[i], repository.UpdateFileOptions{})
-			if err != nil {
-				return err
-			}
-		}
-
-		subFolders, err := findFolder(ctx, tx, repository.FindFolderOptions{Parent: parent})
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-		for i := 0; i < len(subFolders); i++ {
-			subFolders[i].SetState(folder.State())
-			err = updateFolder(ctx, tx, subFolders[i], repository.UpdateFolderOptions{UpdateChildrenState: true})
-			if err != nil {
-				return err
-			}
-		}
-	}
+	//if options.UpdateChildrenState {
+	//	parent, err := domain.CreateFolderParent(folder.Id())
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	subFiles, err := findFile(ctx, tx, repository.FindFileOptions{Parent: parent})
+	//	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	//		return err
+	//	}
+	//	for i := 0; i < len(subFiles); i++ {
+	//		subFiles[i].SetState(folder.State())
+	//		err = updateFile(ctx, tx, subFiles[i], repository.UpdateFileOptions{})
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//
+	//	subFolders, err := findFolder(ctx, tx, repository.FindFolderOptions{Parent: parent})
+	//	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	//		return err
+	//	}
+	//	for i := 0; i < len(subFolders); i++ {
+	//		subFolders[i].SetState(folder.State())
+	//		err = updateFolder(ctx, tx, subFolders[i], repository.UpdateFolderOptions{UpdateChildrenState: true})
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//}
 
 	return nil
 }

@@ -7,10 +7,11 @@ var (
 )
 
 var (
-	StateLocked  = State{"Locked"}
-	StatePrivate = State{"Private"}
-	StateShared  = State{"Shared"}
-	StateTrashed = State{"Trashed"}
+	StateLocked      = State{"Locked"}
+	StatePrivate     = State{"Private"}
+	StateShared      = State{"Shared"}
+	StateTrashedRoot = State{"TrashedRoot"}
+	StateTrashed     = State{"Trashed"}
 )
 
 type State struct {
@@ -26,6 +27,9 @@ func CreateState(value string) (State, error) {
 	}
 	if value == StateShared.value {
 		return StateShared, nil
+	}
+	if value == StateTrashedRoot.value {
+		return StateTrashedRoot, nil
 	}
 	if value == StateTrashed.value {
 		return StateTrashed, nil

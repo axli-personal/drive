@@ -41,7 +41,7 @@
 import axios from "axios";
 import { ref } from "vue";
 import { site } from "/src/backend";
-import List from "/src/components/article/List.vue";
+import List from "/src/components/drive/List.vue";
 
 export default {
   components: { List },

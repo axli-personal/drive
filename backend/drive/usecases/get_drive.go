@@ -56,6 +56,7 @@ func (handler getDriveHandler) Handle(ctx context.Context, args GetDriveArgs) (G
 		ctx,
 		repository.FindFolderOptions{
 			Parent: domain.CreateDriveParent(),
+			States: []domain.State{domain.StatePrivate, domain.StateShared},
 		},
 	)
 
@@ -63,6 +64,7 @@ func (handler getDriveHandler) Handle(ctx context.Context, args GetDriveArgs) (G
 		ctx,
 		repository.FindFileOptions{
 			Parent: domain.CreateDriveParent(),
+			States: []domain.State{domain.StatePrivate, domain.StateShared},
 		},
 	)
 

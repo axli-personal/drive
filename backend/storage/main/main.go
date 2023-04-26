@@ -32,7 +32,7 @@ func main() {
 
 		app := fiber.New(
 			fiber.Config{
-				BodyLimit: 100 * 1024 * 1024,
+				BodyLimit: 2 * 1000 * 1024 * 1024,
 			},
 		)
 

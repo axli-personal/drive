@@ -7,10 +7,18 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
+const (
 	ErrCodeRepository = "Repository"
 	ErrCodeNotFound   = "NotFound"
+	ErrCodeDuplicated = "Duplicated"
 )
+
+type Repository interface {
+	Transaction(fn func(repo Repository) error) error
+	GetDriveRepo() DriveRepository
+	GetFolderRepo() FolderRepository
+	GetFileRepo() FileRepository
+}
 
 type (
 	DriveRepository interface {
@@ -34,7 +42,9 @@ type (
 	}
 
 	FindFolderOptions struct {
-		Parent domain.Parent
+		DriveId uuid.UUID
+		Parent  domain.Parent
+		States  []domain.State
 	}
 
 	UpdateFolderOptions struct {
@@ -54,7 +64,10 @@ type (
 	}
 
 	FindFileOptions struct {
-		Parent domain.Parent
+		DriveId uuid.UUID
+		Parent  domain.Parent
+		Name    string
+		States  []domain.State
 	}
 
 	UpdateFileOptions struct {

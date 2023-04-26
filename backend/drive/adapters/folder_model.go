@@ -8,9 +8,9 @@ import (
 
 type FolderModel struct {
 	Id         string `gorm:"size:36;primaryKey"`
-	DriveId    string
-	Parent     string
-	Name       string
+	DriveId    string `gorm:"size:36;index:idx_drive_parent_name,unique,priority:1"`
+	Parent     string `gorm:"size:36;index:idx_drive_parent_name,unique,priority:2"`
+	Name       string `gorm:"size:128;index:idx_drive_parent_name,unique,priority:3"`
 	State      string
 	LastChange time.Time
 }

@@ -28,7 +28,9 @@ func NewMysqlFileRepository(connectString string) (repository.FileRepository, er
 }
 
 func (repo GormFileRepository) SaveFile(ctx context.Context, file *domain.File) error {
-	return saveFile(ctx, repo.db, file)
+	fileModel := NewFileModel(file)
+
+	return repo.db.WithContext(ctx).Create(&fileModel).Error
 }
 
 func (repo GormFileRepository) GetFile(ctx context.Context, id uuid.UUID) (*domain.File, error) {
@@ -36,38 +38,30 @@ func (repo GormFileRepository) GetFile(ctx context.Context, id uuid.UUID) (*doma
 }
 
 func (repo GormFileRepository) FindFile(ctx context.Context, options repository.FindFileOptions) ([]*domain.File, error) {
-	return findFile(ctx, repo.db, options)
-}
+	tx := repo.db.WithContext(ctx)
 
-func (repo GormFileRepository) UpdateFile(ctx context.Context, file *domain.File, options repository.UpdateFileOptions) error {
-	return updateFile(ctx, repo.db, file, options)
-}
-
-func (repo GormFileRepository) DeleteFile(ctx context.Context, file *domain.File) error {
-	return deleteFile(ctx, repo.db, file)
-}
-
-func saveFile(ctx context.Context, tx *gorm.DB, file *domain.File) error {
-	fileModel := NewFileModel(file)
-
-	return tx.Create(&fileModel).Error
-}
-
-func getFile(ctx context.Context, tx *gorm.DB, id uuid.UUID) (*domain.File, error) {
-	fileModel := FileModel{}
-
-	err := tx.Take(&fileModel, "id = ?", id.String()).Error
-	if err != nil {
-		return nil, err
+	if options.DriveId != uuid.Nil {
+		tx = tx.Where("drive_id = ?", options.DriveId.String())
 	}
 
-	return fileModel.File()
-}
+	if !options.Parent.IsZero() {
+		tx = tx.Where("parent = ?", options.Parent.String())
+	}
 
-func findFile(ctx context.Context, tx *gorm.DB, options repository.FindFileOptions) ([]*domain.File, error) {
+	if options.Name != "" {
+		tx = tx.Where("name = ?", options.Name)
+	}
+
+	if len(options.States) > 0 {
+		var statesCond []string
+		for _, state := range options.States {
+			statesCond = append(statesCond, state.Value())
+		}
+		tx = tx.Where("state IN ?", statesCond)
+	}
+
 	var models []FileModel
-
-	err := tx.Where("parent = ?", options.Parent.String()).Find(&models).Error
+	err := tx.Find(&models).Error
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +76,25 @@ func findFile(ctx context.Context, tx *gorm.DB, options repository.FindFileOptio
 	}
 
 	return files, err
+}
+
+func (repo GormFileRepository) UpdateFile(ctx context.Context, file *domain.File, options repository.UpdateFileOptions) error {
+	return updateFile(ctx, repo.db, file, options)
+}
+
+func (repo GormFileRepository) DeleteFile(ctx context.Context, file *domain.File) error {
+	return deleteFile(ctx, repo.db, file)
+}
+
+func getFile(ctx context.Context, tx *gorm.DB, id uuid.UUID) (*domain.File, error) {
+	fileModel := FileModel{}
+
+	err := tx.Take(&fileModel, "id = ?", id.String()).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return fileModel.File()
 }
 
 func updateFile(ctx context.Context, tx *gorm.DB, file *domain.File, options repository.UpdateFileOptions) error {
